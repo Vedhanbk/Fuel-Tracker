@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Tracker v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --card: #1c2030;
+    --border: #2a2f42;
+    --car: #f0a500;
+    --bike: #00c9a7;
+    --text: #e8eaf0;
+    --muted: #7a7f96;
+    --danger: #ff4f4f;
+    --google: #4285F4;
+    --success: #34a853;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 80px;
+  }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-align: center;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--car), var(--bike));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 18px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* GOOGLE SYNC BAR */
+  .sync-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .status-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .status-dot.syncing { background: var(--google); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .status-text {
+    font-size: 0.8rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-google {
+    background: var(--google);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .btn-google:hover { opacity: 0.9; }
+  .btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-sync {
+    background: transparent;
+    color: var(--success);
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-sync:hover { background: rgba(52,168,83,0.12); }
+  .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .tab.active-car { background: var(--car); color: #000; }
+  .tab.active-bike { background: var(--bike); color: #000; }
+
+  /* FORM CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .optional-tag {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border 0.2s;
+    width: 100%;
+  }
+
+  input:focus { border-color: var(--car); }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+  .entry-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .type-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .type-btn.active-full { border-color: var(--car); color: var(--car); background: rgba(240,165,0,0.08); }
+  .type-btn.active-km   { border-color: var(--bike); color: var(--bike); background: rgba(0,201,167,0.08); }
+  .bike-mode .type-btn.active-full { border-color: var(--bike); color: var(--bike); background: rgba(0,201,167,0.08); }
+  .bike-mode .type-btn.active-km   { border-color: var(--car); color: var(--car); background: rgba(240,165,0,0.08); }
+
+  .petrol-fields {
+    display: contents;
+    transition: opacity 0.3s;
+  }
+
+  .petrol-fields.hidden > * { display: none; }
+
+  .btn-add {
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-add:active { transform: scale(0.98); }
+  .btn-add.car-btn  { background: var(--car); color: #000; }
+  .btn-add.bike-btn { background: var(--bike); color: #000; }
+
+  /* MILEAGE INSIGHTS */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .insight-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--car);
+  }
+
+  .insight-box.bike-accent-border::before { background: var(--bike); }
+
+  .insight-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .insight-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .insight-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+
+  .car-accent  { color: var(--car); }
+  .bike-accent { color: var(--bike); }
+  .good-color  { color: var(--success); }
+  .warn-color  { color: #f59e0b; }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 520px;
+  }
+
+  thead tr { background: var(--surface); }
+
+  th {
+    padding: 11px 12px;
+    text-align: left;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .tag-full { background: rgba(240,165,0,0.15); color: var(--car); border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; }
+  .tag-km   { background: rgba(0,201,167,0.12); color: var(--bike); border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; }
+
+  .del-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--danger);
+    padding: 3px 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.2s;
+  }
+  .del-btn:hover { background: rgba(255,79,79,0.12); }
+
+  .empty-msg { text-align: center; color: var(--muted); padding: 32px; font-size: 0.9rem; }
+
+  .section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: #1e2535;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 0.88rem;
+    transition: transform 0.3s ease;
+    z-index: 9999;
+    white-space: normal;
+    max-width: 88vw;
+    text-align: center;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 400px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .insights-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SETUP MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 20px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    color: var(--google);
+  }
+  .modal-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .free-badge {
+    display: inline-block;
+    background: rgba(52,168,83,0.15);
+    border: 1px solid var(--success);
+    color: var(--success);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+  }
+  .step-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .step-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+  .step-num {
+    background: var(--google);
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { color: var(--text); }
+  .step-text a { color: var(--google); text-decoration: none; }
+  .step-text a:hover { text-decoration: underline; }
+  .step-text code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.82rem;
+    color: var(--car);
+    font-family: monospace;
+  }
+  .step-text .note {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2px;
+  }
+  .modal-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+  .client-id-section label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .client-id-row {
+    display: flex;
+    gap: 8px;
+  }
+  .client-id-row input {
+    flex: 1;
+    font-size: 0.82rem;
+    padding: 9px 12px;
+  }
+  .btn-save-id {
+    background: var(--google);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .btn-save-id:hover { opacity: 0.88; }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 4px 9px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .modal-close:hover { border-color: var(--text); color: var(--text); }
+  .billing-note {
+    background: rgba(240,165,0,0.08);
+    border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .billing-note strong { color: var(--car); }
+</style>
+</head>
+<body>
+
+<!-- SHEET ID SETUP MODAL -->
+<div class="modal-overlay" id="sheet-setup-modal" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('sheet-setup-modal').style.display='none'">✕ Close</button>
+    <div class="modal-title">📋 Link Your Google Sheet</div>
+    <p class="modal-subtitle">You need to create a blank Google Sheet and paste its ID here. This avoids needing Drive API permission.</p>
+
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <span class="step-text">
+          Open <a href="https://sheets.google.com" target="_blank">sheets.google.com</a> → tap <strong>+ Blank</strong> to create a new sheet
+        </span>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <span class="step-text">
+          Rename it to <code>Vehicle Fuel Log</code> (tap the title at top)
+        </span>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <span class="step-text">
+          Look at the URL — it looks like:<br>
+          <code>docs.google.com/spreadsheets/d/<strong>XXXXX</strong>/edit</code><br>
+          Copy the long ID between <code>/d/</code> and <code>/edit</code>
+        </span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span class="step-text">
+          Paste it below and tap <strong>Connect Sheet</strong>
+        </span>
+      </li>
+    </ol>
+
+    <hr class="modal-divider">
+    <div class="client-id-section">
+      <label>Paste Sheet ID Here</label>
+      <div class="client-id-row">
+        <input type="text" id="sheet-id-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+        <button class="btn-save-id" onclick="connectToSheet(document.getElementById('sheet-id-input').value)">Connect Sheet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GOOGLE SETUP MODAL -->
+<div class="modal-overlay" id="setup-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕ Close</button>
+    <div class="modal-title">🔗 Connect Google Sheets</div>
+    <p class="modal-subtitle">Sync your fuel log to a Google Sheet — automatically created in your Google Drive.</p>
+
+    <div class="free-badge">✅ 100% Free — No billing needed</div>
+
+    <div class="billing-note">
+      <strong>⚠️ About the billing prompt:</strong> Google Cloud asks for a payment method during sign-up as identity verification only. The APIs used here (Sheets + Drive) are <strong>free within the daily quota</strong> — personal use like this tracker will never exceed free limits. You will <strong>not be charged</strong>.
+    </div>
+
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <span class="step-text">
+          Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> and sign in with your Google account.
+          <span class="note">Use the same Google account whose Drive you want to save the sheet to.</span>
+        </span>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <span class="step-text">
+          Click <strong>Select a project → New Project</strong>. Name it anything (e.g. <code>Fuel Tracker</code>) and click <strong>Create</strong>.
+        </span>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <span class="step-text">
+          In the search bar type <strong>Google Sheets API</strong>, open it and click <strong>Enable</strong>. Repeat for <strong>Google Drive API</strong>.
+          <span class="note">Both are free. No quota issues for personal use.</span>
+        </span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span class="step-text">
+          Go to <strong>APIs &amp; Services → OAuth consent screen</strong>. Choose <strong>External</strong>, fill in App name (e.g. <code>Fuel Log</code>) and your email. Save &amp; continue through all steps.
+        </span>
+      </li>
+      <li>
+        <span class="step-num">5</span>
+        <span class="step-text">
+          Go to <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth 2.0 Client ID</strong>. Choose <strong>Web application</strong>.
+        </span>
+      </li>
+      <li>
+        <span class="step-num">6</span>
+        <span class="step-text">
+          Under <strong>Authorized JavaScript origins</strong>, add the exact URL where you open this HTML file.
+          <span class="note">If opening locally: <code>http://localhost</code> or <code>null</code> (for file://). If hosted online, use that URL.</span>
+        </span>
+      </li>
+      <li>
+        <span class="step-num">7</span>
+        <span class="step-text">
+          Click <strong>Create</strong>. Copy the <strong>Client ID</strong> (ends in <code>.apps.googleusercontent.com</code>) and paste it below.
+        </span>
+      </li>
+    </ol>
+
+    <hr class="modal-divider">
+
+    <div class="client-id-section">
+      <label>Paste Your Client ID Here</label>
+      <div class="client-id-row">
+        <input type="text" id="client-id-input" placeholder="xxxx.apps.googleusercontent.com">
+        <button class="btn-save-id" onclick="saveClientId()">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h1>⛽ FUEL LOG</h1>
+<p class="subtitle">Car &amp; Bike Tracker · ₹</p>
+
+<!-- GOOGLE SYNC BAR -->
+<div class="sync-bar">
+  <div class="sync-status">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="status-text" id="status-text">Not connected to Google</span>
+  </div>
+  <button class="btn-google" id="btn-google-auth" onclick="handleGoogleAuth()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#fff"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#fff"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#fff"/></svg>
+    Connect Google
+  </button>
+  <button class="btn-sync" id="btn-debug" style="border-color:#a78bfa;color:#a78bfa;display:none" onclick="debugConnection()">
+    🔍 Debug
+  </button>
+  <button class="btn-sync" style="border-color:var(--danger);color:var(--danger)" onclick="clearUserData()">
+    🗑 Reset
+  </button>
+</div>
+
+<!-- DEBUG LOG PANEL -->
+<div id="debug-panel" style="display:none;background:#0a0c10;border:1px solid #a78bfa;border-radius:10px;padding:12px;margin:10px 0;font-size:0.75rem;font-family:monospace;color:#a78bfa;max-height:180px;overflow-y:auto;line-height:1.6;word-break:break-all;"></div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active-car" onclick="switchVehicle('car')" id="tab-car">🚗 CAR</button>
+  <button class="tab" onclick="switchVehicle('bike')" id="tab-bike">🏍️ BIKE</button>
+</div>
+
+<!-- ADD ENTRY FORM -->
+<div class="card" id="form-card">
+  <div class="card-title" id="form-title">Add Car Entry</div>
+
+  <!-- Entry type toggle -->
+  <div class="entry-type-toggle">
+    <button class="type-btn active-full" id="type-full" onclick="setEntryType('full')">⛽ Fuel + KM</button>
+    <button class="type-btn" id="type-km" onclick="setEntryType('km')">📍 KM Only</button>
+  </div>
+
+  <!-- Source toggle (bike only) -->
+  <div class="entry-type-toggle" id="source-toggle" style="display:none">
+    <button class="type-btn active-full" id="src-own" onclick="setPetrolSource('Own')">🏠 Own</button>
+    <button class="type-btn" id="src-office" onclick="setPetrolSource('Office')">🏢 Office</button>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Date</label>
+      <input type="date" id="entry-date">
+    </div>
+    <div class="form-group full">
+      <label>KM Reading</label>
+      <input type="number" id="entry-km" placeholder="e.g. 45230">
+    </div>
+
+    <!-- Petrol fields — hidden when KM-only -->
+    <div class="petrol-fields" id="petrol-fields">
+      <div class="form-group">
+        <label>Petrol (Litres) <span class="optional-tag">optional</span></label>
+        <input type="number" id="entry-litres" placeholder="e.g. 5.5" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Total Cost (₹) <span class="optional-tag">optional</span></label>
+        <input type="number" id="entry-cost" placeholder="e.g. 550" step="0.01">
+      </div>
+    </div>
+  </div>
+  <button class="btn-add car-btn" id="add-btn" onclick="addEntry()">+ ADD ENTRY</button>
+</div>
+
+<!-- MILEAGE INSIGHTS -->
+<div class="insights-grid" id="insights-grid">
+  <div class="insight-box" id="insight-mileage">
+    <div class="insight-value car-accent" id="ins-mileage">—</div>
+    <div class="insight-label">Avg Mileage</div>
+    <div class="insight-sub" id="ins-mileage-sub">Need 2+ fuel entries</div>
+  </div>
+  <div class="insight-box" id="insight-range">
+    <div class="insight-value car-accent" id="ins-range">—</div>
+    <div class="insight-label">Est. Range Left</div>
+    <div class="insight-sub" id="ins-range-sub">Based on last fill-up</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid" style="grid-template-columns:1fr 1fr">
+  <div class="stat-box">
+    <div class="stat-value car-accent" id="stat-entries">0</div>
+    <div class="stat-label">Entries</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value car-accent" id="stat-km-run">0 km</div>
+    <div class="stat-label">Total KM Run</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value car-accent" id="stat-litres">0 L</div>
+    <div class="stat-label">Total Petrol</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value car-accent" id="stat-cost">₹0</div>
+    <div class="stat-label">Total Spent</div>
+  </div>
+</div>
+
+<!-- Own/Office Split (bike only) -->
+<div id="source-split-box" style="display:none"></div>
+
+<!-- HISTORY TABLE -->
+<div class="card">
+  <div class="section-toggle">
+    <div class="card-title" style="margin-bottom:0" id="history-title">Car History</div>
+    <span class="badge" id="history-count">0 records</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>KM Reading</th>
+          <th>Litres</th>
+          <th>Cost (₹)</th>
+          <th>₹/L</th>
+          <th>km/L</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="entries-tbody">
+        <tr><td colspan="8" class="empty-msg">No entries yet. Add your first entry above!</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Google API Script -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+  // ── Config ───────────────────────────────────────────────────────
+  // Replace with your actual Google OAuth Client ID from Google Cloud Console
+  // Steps: console.cloud.google.com → New Project → Enable Sheets API
+  //        → Credentials → OAuth 2.0 Client ID (Web) → Add this page's URL as authorized origin
+  // Client ID: reads from localStorage if saved via the setup modal, else falls back to hardcoded value
+  const GOOGLE_CLIENT_ID = localStorage.getItem('fuellog_client_id') || 'YOUR_GOOGLE_CLIENT_ID_HERE';
+  const SHEET_NAME_CAR  = 'Car Log';
+  const SHEET_NAME_BIKE = 'Bike Log';
+
+  let currentVehicle = 'car';
+  let entryType      = 'full'; // 'full' or 'km'
+  let petrolSource   = 'Own';  // 'Own' or 'Office' (bike only)
+  let googleToken    = null;
+  let spreadsheetId  = null;
+
+  // ── Storage helpers ──────────────────────────────────────────────
+  // Hardcoded baseline data from Excel (always present)
+  const BASELINE_DATA = {
+    bike: [{"id": 1000, "date": "2025-12-29", "km": 154800.0, "type": "full", "litres": 4.9261, "cost": 500.0, "source": "Own"}, {"id": 1001, "date": "2026-01-02", "km": 154890.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Office"}, {"id": 1002, "date": "2026-01-03", "km": 154963.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1003, "date": "2026-01-05", "km": 155036.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1004, "date": "2026-01-06", "km": 155100.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1005, "date": "2026-01-07", "km": 155173.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1006, "date": "2026-01-08", "km": 155237.0, "type": "full", "litres": 4.9261, "cost": 500.0, "source": "Own"}, {"id": 1007, "date": "2026-01-09", "km": 155311.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Office"}, {"id": 1008, "date": "2026-01-10", "km": 155377.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1009, "date": "2026-01-12", "km": 155538.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1010, "date": "2026-01-14", "km": 155602.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1011, "date": "2026-01-15", "km": 155639.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1012, "date": "2026-01-18", "km": 155715.0, "type": "full", "litres": 5.0, "cost": 506.75, "source": "Own"}, {"id": 1013, "date": "2026-01-19", "km": 155746.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1014, "date": "2026-01-20", "km": 155820.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1015, "date": "2026-01-21", "km": 155884.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1016, "date": "2026-01-22", "km": 155948.0, "type": "full", "litres": 5.0, "cost": 507.55, "source": "Own"}, {"id": 1017, "date": "2026-01-24", "km": 156078.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1018, "date": "2026-01-27", "km": 156143.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1019, "date": "2026-01-28", "km": 156210.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1020, "date": "2026-01-29", "km": 156276.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1021, "date": "2026-01-30", "km": 156341.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1022, "date": "2026-01-31", "km": 156407.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1023, "date": "2026-02-01", "km": 156452.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1024, "date": "2026-02-02", "km": 156493.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1025, "date": "2026-02-03", "km": 156561.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1026, "date": "2026-02-04", "km": 156627.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1027, "date": "2026-02-05", "km": 156693.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1028, "date": "2026-02-06", "km": 156759.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1029, "date": "2026-02-07", "km": 156833.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1030, "date": "2026-02-08", "km": 156938.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1031, "date": "2026-02-09", "km": 156970.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1032, "date": "2026-02-10", "km": 157035.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1033, "date": "2026-02-11", "km": 157067.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1034, "date": "2026-02-12", "km": 157122.0, "type": "full", "litres": 4.0, "cost": 405.44, "source": "Own"}, {"id": 1035, "date": "2026-02-13", "km": 157154.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1036, "date": "2026-02-14", "km": 157218.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1037, "date": "2026-02-16", "km": 157284.0, "type": "full", "litres": 4.0, "cost": 406.0, "source": "Own"}, {"id": 1038, "date": "2026-02-18", "km": 157361.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1039, "date": "2026-02-19", "km": 157423.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1040, "date": "2026-02-20", "km": 157508.0, "type": "full", "litres": 5.0, "cost": 507.55, "source": "Own"}, {"id": 1041, "date": "2026-02-21", "km": 157539.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1042, "date": "2026-02-22", "km": 157604.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1043, "date": "2026-02-23", "km": 157670.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1044, "date": "2026-02-24", "km": 157732.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1045, "date": "2026-02-25", "km": 157803.0, "type": "full", "litres": 2.0, "cost": 203.0, "source": "Own"}, {"id": 1046, "date": "2026-02-26", "km": 157868.0, "type": "full", "litres": 1.9702, "cost": 200.0, "source": "Own"}, {"id": 1047, "date": "2026-02-27", "km": 157931.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1048, "date": "2026-02-28", "km": 157993.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1049, "date": "2026-03-01", "km": 158103.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1050, "date": "2026-03-02", "km": 158133.0, "type": "full", "litres": 2.0, "cost": 203.18, "source": "Own"}, {"id": 1051, "date": "2026-03-05", "km": 158196.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1052, "date": "2026-03-06", "km": 158258.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1053, "date": "2026-03-07", "km": 158320.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1054, "date": "2026-03-09", "km": 158416.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1055, "date": "2026-03-10", "km": 158481.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1056, "date": "2026-03-11", "km": 158544.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1057, "date": "2026-03-12", "km": 158607.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1058, "date": "2026-03-13", "km": 158670.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1059, "date": "2026-03-14", "km": 158742.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1060, "date": "2026-03-15", "km": 158812.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1061, "date": "2026-03-16", "km": 158843.0, "type": "full", "litres": 2.0, "cost": 202.76, "source": "Own"}, {"id": 1062, "date": "2026-03-17", "km": 158905.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1063, "date": "2026-03-18", "km": 158968.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1064, "date": "2026-03-19", "km": 159030.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1065, "date": "2026-03-20", "km": 159093.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1066, "date": "2026-03-21", "km": 159154.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1067, "date": "2026-03-23", "km": 159235.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1068, "date": "2026-03-24", "km": 159299.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1069, "date": "2026-03-25", "km": 159362.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1070, "date": "2026-03-26", "km": 159424.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1071, "date": "2026-03-27", "km": 159487.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1072, "date": "2026-03-28", "km": 159553.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1073, "date": "2026-03-30", "km": 159616.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1074, "date": "2026-03-31", "km": 159679.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1075, "date": "2026-04-02", "km": 159742.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1076, "date": "2026-04-06", "km": 159807.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1077, "date": "2026-04-07", "km": 159869.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1078, "date": "2026-04-08", "km": 159941.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1079, "date": "2026-04-09", "km": 160003.0, "type": "full", "litres": 3.0, "cost": 304.35, "source": "Office"}, {"id": 1080, "date": "2026-04-10", "km": 160066.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1081, "date": "2026-04-11", "km": 160146.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1082, "date": "2026-04-13", "km": 160273.0, "type": "full", "litres": 3.0, "cost": 304.5, "source": "Own"}, {"id": 1083, "date": "2026-04-14", "km": 160337.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1084, "date": "2026-04-15", "km": 160400.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Own"}, {"id": 1085, "date": "2026-04-16", "km": 160463.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1086, "date": "2026-04-17", "km": 160526.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1087, "date": "2026-04-18", "km": 160589.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1088, "date": "2026-04-20", "km": 160672.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1089, "date": "2026-04-23", "km": 160717.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1090, "date": "2026-04-24", "km": 160748.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1091, "date": "2026-04-25", "km": 160811.0, "type": "full", "litres": 5.0, "cost": 507.5, "source": "Own"}, {"id": 1092, "date": "2026-04-27", "km": 160946.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1093, "date": "2026-04-28", "km": 161009.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1094, "date": "2026-04-29", "km": 161076.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1095, "date": "2026-04-30", "km": 161140.0, "type": "full", "litres": 3.0, "cost": 304.14, "source": "Own"}, {"id": 1096, "date": "2026-05-02", "km": 161203.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}, {"id": 1097, "date": "2026-05-04", "km": 161273.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1098, "date": "2026-05-06", "km": 161336.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1099, "date": "2026-05-07", "km": 161398.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1100, "date": "2026-05-08", "km": 161451.0, "type": "full", "litres": 3.0, "cost": 304.14, "source": "Own"}, {"id": 1101, "date": "2026-05-09", "km": 161514.0, "type": "km", "litres": null, "cost": null, "source": null}, {"id": 1102, "date": "2026-05-11", "km": 161576.0, "type": "full", "litres": 5.0, "cost": 507.25, "source": "Office"}],
+    car:  [{"id": 2000, "date": "2026-01-12", "km": 7071.0, "type": "km", "litres": null, "cost": null}, {"id": 2001, "date": "2026-01-13", "km": 7143.0, "type": "full", "litres": 4.9261, "cost": 500.0}, {"id": 2002, "date": "2026-01-15", "km": 7225.0, "type": "full", "litres": 10.0, "cost": 1015.1}, {"id": 2003, "date": "2026-01-18", "km": 7238.0, "type": "km", "litres": null, "cost": null}, {"id": 2004, "date": "2026-01-26", "km": 7299.0, "type": "full", "litres": 8.94, "cost": 906.8}, {"id": 2005, "date": "2026-02-01", "km": 7323.0, "type": "km", "litres": null, "cost": null}, {"id": 2006, "date": "2026-02-11", "km": 7410.0, "type": "full", "litres": 8.94, "cost": 507.3}, {"id": 2007, "date": "2026-02-17", "km": 7474.0, "type": "full", "litres": 5.0, "cost": 506.95}, {"id": 2008, "date": "2026-02-20", "km": 8002.0, "type": "full", "litres": 30.0, "cost": 3047.6}, {"id": 2009, "date": "2026-03-04", "km": 8504.0, "type": "full", "litres": 35.0, "cost": 3553.5}, {"id": 2010, "date": "2026-03-15", "km": 8519.0, "type": "km", "litres": 4.44, "cost": null}, {"id": 2011, "date": "2026-04-01", "km": 8532.0, "type": "full", "litres": 49.85, "cost": 5057.28}, {"id": 2012, "date": "2026-04-24", "km": 9279.0, "type": "km", "litres": null, "cost": null}, {"id": 2013, "date": "2026-05-02", "km": null, "type": "full", "litres": 5.0, "cost": 506.5}, {"id": 2014, "date": "2026-05-03", "km": null, "type": "full", "litres": 10.0, "cost": 1013.0}, {"id": 2015, "date": "2026-05-10", "km": null, "type": "full", "litres": 10.0, "cost": 1015.0}, {"id": 2016, "date": "2026-05-12", "km": 9612.0, "type": "full", "litres": 5.0, "cost": 506.8}]
+  };
+
+  function loadData(vehicle) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('fuellog_' + vehicle) || '[]');
+      const baseline = BASELINE_DATA[vehicle] || [];
+      // Merge: baseline first, then any new entries added by user (id > 9999)
+      const userEntries = stored.filter(e => e.id > 9999);
+      return [...baseline, ...userEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch(e) {
+      return BASELINE_DATA[vehicle] || [];
+    }
+  }
+
+  function saveData(vehicle, data) {
+    try {
+      // Only persist user-added entries (id > 9999); baseline is always hardcoded
+      const userEntries = data.filter(e => e.id > 9999);
+      localStorage.setItem('fuellog_' + vehicle, JSON.stringify(userEntries));
+    } catch(e) { showToast('⚠️ Could not save data'); }
+  }
+
+  function loadMeta() {
+    try { return JSON.parse(localStorage.getItem('fuellog_meta') || '{}'); }
+    catch(e) { return {}; }
+  }
+
+  function saveMeta(meta) {
+    localStorage.setItem('fuellog_meta', JSON.stringify(meta));
+  }
+
+  // ── Entry type toggle ────────────────────────────────────────────
+  function setEntryType(type) {
+    entryType = type;
+    const pf = document.getElementById('petrol-fields');
+    const btnFull = document.getElementById('type-full');
+    const btnKm   = document.getElementById('type-km');
+
+    if (type === 'full') {
+      pf.classList.remove('hidden');
+      btnFull.className = 'type-btn active-full';
+      btnKm.className   = 'type-btn';
+    } else {
+      pf.classList.add('hidden');
+      btnFull.className = 'type-btn';
+      btnKm.className   = 'type-btn active-km';
+      document.getElementById('entry-litres').value = '';
+      document.getElementById('entry-cost').value   = '';
+    }
+  }
+
+  // ── Source toggle (bike) ─────────────────────────────────────────
+  function setPetrolSource(src) {
+    petrolSource = src;
+    document.getElementById('src-own').className    = 'type-btn' + (src === 'Own'    ? ' active-full' : '');
+    document.getElementById('src-office').className = 'type-btn' + (src === 'Office' ? ' active-full' : '');
+  }
+
+  // ── Switch vehicle ───────────────────────────────────────────────
+  function switchVehicle(v) {
+    currentVehicle = v;
+    const iscar = v === 'car';
+    const accent = iscar ? 'var(--car)' : 'var(--bike)';
+
+    document.getElementById('tab-car').className  = 'tab' + (iscar ? ' active-car' : '');
+    document.getElementById('tab-bike').className = 'tab' + (!iscar ? ' active-bike' : '');
+
+    document.getElementById('form-title').textContent    = `Add ${iscar ? 'Car' : 'Bike'} Entry`;
+    document.getElementById('add-btn').className         = `btn-add ${iscar ? 'car-btn' : 'bike-btn'}`;
+    document.getElementById('history-title').textContent = `${iscar ? 'Car' : 'Bike'} History`;
+    document.getElementById('source-toggle').style.display = iscar ? 'none' : 'flex';
+
+    ['stat-entries','stat-litres','stat-cost','stat-km-run','ins-mileage','ins-range'].forEach(id => {
+      document.getElementById(id).style.color = accent;
+    });
+
+    renderEntries();
+    clearForm();
+  }
+
+  // ── Add entry ────────────────────────────────────────────────────
+  function addEntry() {
+    const date   = document.getElementById('entry-date').value;
+    const km     = parseFloat(document.getElementById('entry-km').value);
+    const litres = parseFloat(document.getElementById('entry-litres').value);
+    const cost   = parseFloat(document.getElementById('entry-cost').value);
+
+    if (!date)              return showToast('⚠️ Please select a date');
+    if (isNaN(km) || km < 0) return showToast('⚠️ Enter a valid KM reading');
+
+    // If full entry, validate petrol fields
+    if (entryType === 'full') {
+      if (isNaN(litres) || litres <= 0) return showToast('⚠️ Enter litres filled (or switch to KM Only)');
+      if (isNaN(cost)   || cost   <= 0) return showToast('⚠️ Enter total cost');
+    }
+
+    const data = loadData(currentVehicle);
+    const entry = {
+      id: Date.now() + 10000, // user entries have id > 9999 to distinguish from baseline
+      date,
+      km,
+      type: entryType,
+      litres: entryType === 'full' ? litres : null,
+      cost:   entryType === 'full' ? cost   : null,
+      source: (entryType === 'full' && currentVehicle === 'bike') ? petrolSource : null
+    };
+    data.push(entry);
+    data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    saveData(currentVehicle, data);
+
+    renderEntries();
+    clearForm();
+    showToast(`✅ Entry added for ${currentVehicle === 'car' ? '🚗 Car' : '🏍️ Bike'}!`);
+
+    // Auto-sync if connected
+    if (googleToken && spreadsheetId) syncToSheets(true);
+  }
+
+  // ── Mileage calculation ──────────────────────────────────────────
+  function calcMileage(data) {
+    // Only use entries sorted ascending by date for calculation
+    const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const fuelEntries = sorted.filter(e => e.type === 'full' && e.litres && e.km);
+
+    if (fuelEntries.length < 2) return { avg: null, lastLitres: null, lastKm: null };
+
+    let totalKm  = 0;
+    let totalLit = 0;
+    for (let i = 1; i < fuelEntries.length; i++) {
+      const kmDiff = fuelEntries[i].km - fuelEntries[i-1].km;
+      if (kmDiff > 0) {
+        totalKm  += kmDiff;
+        totalLit += fuelEntries[i].litres; // fuel used to travel that distance
+      }
+    }
+
+    const avg = totalLit > 0 ? totalKm / totalLit : null;
+    const last = fuelEntries[fuelEntries.length - 1];
+    return { avg, lastLitres: last.litres, lastKm: last.km };
+  }
+
+  // ── Render ───────────────────────────────────────────────────────
+  function renderEntries() {
+    const data   = loadData(currentVehicle);
+    const tbody  = document.getElementById('entries-tbody');
+    const iscar  = currentVehicle === 'car';
+    const accent = iscar ? 'var(--car)' : 'var(--bike)';
+
+    // Stats
+    const fuelData    = data.filter(e => e.litres);
+    const totalLitres = fuelData.reduce((s, e) => s + (e.litres || 0), 0);
+    const totalCost   = fuelData.reduce((s, e) => s + (e.cost   || 0), 0);
+
+    document.getElementById('stat-entries').textContent = data.length;
+    document.getElementById('stat-litres').textContent  = totalLitres.toFixed(1) + ' L';
+    document.getElementById('stat-cost').textContent    = '₹' + totalCost.toFixed(0);
+    document.getElementById('history-count').textContent = data.length + ' record' + (data.length !== 1 ? 's' : '');
+
+    // Total KM run: last KM reading − first KM reading
+    const kmReadings = data.map(e => e.km).filter(k => k != null);
+    const totalKmRun = kmReadings.length >= 2
+      ? Math.round(Math.max(...kmReadings) - Math.min(...kmReadings))
+      : 0;
+    document.getElementById('stat-km-run').textContent = totalKmRun.toLocaleString('en-IN') + ' km';
+
+    // ─ Own / Office split (bike only) ─
+    const splitBox = document.getElementById('source-split-box');
+    if (!iscar) {
+      const ownData    = fuelData.filter(e => e.source === 'Own' || !e.source);
+      const officeData = fuelData.filter(e => e.source === 'Office');
+      const ownLit  = ownData.reduce((s,e) => s+(e.litres||0), 0);
+      const ownCost = ownData.reduce((s,e) => s+(e.cost||0), 0);
+      const offLit  = officeData.reduce((s,e) => s+(e.litres||0), 0);
+      const offCost = officeData.reduce((s,e) => s+(e.cost||0), 0);
+      splitBox.style.display = '';
+      splitBox.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px">🏠 Own</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;color:var(--bike)">${ownLit.toFixed(1)} L</div>
+            <div style="font-size:0.72rem;color:var(--muted)">₹${ownCost.toFixed(0)}</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px">🏢 Office</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;color:#4285F4">${offLit.toFixed(1)} L</div>
+            <div style="font-size:0.72rem;color:var(--muted)">₹${offCost.toFixed(0)}</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--bike);border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px">⛽ Total</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text)">${totalLitres.toFixed(1)} L</div>
+            <div style="font-size:0.72rem;color:var(--muted)">₹${totalCost.toFixed(0)}</div>
+          </div>
+        </div>`;
+    } else {
+      splitBox.style.display = 'none';
+    }
+
+    // ─ Mileage insights ─
+    const { avg, lastLitres } = calcMileage(data);
+    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const latestKm = sorted.length ? sorted[0].km : null;
+
+    // Average mileage
+    if (avg !== null) {
+      document.getElementById('ins-mileage').textContent   = avg.toFixed(1) + ' km/L';
+      document.getElementById('ins-mileage-sub').textContent = `Based on ${data.filter(e=>e.type==='full').length} fill-ups`;
+    } else {
+      document.getElementById('ins-mileage').textContent   = '—';
+      document.getElementById('ins-mileage-sub').textContent = 'Need 2+ fuel entries';
+    }
+
+    // Range left — estimate based on last fill-up litres * avg mileage - km driven since last fill
+    if (avg !== null && lastLitres !== null) {
+      // Find last fuel entry km and current km
+      const fuelEntries = [...data].filter(e => e.type === 'full').sort((a,b) => new Date(b.date)-new Date(a.date));
+      const lastFuelKm  = fuelEntries[0]?.km || 0;
+      const kmSinceFill = latestKm - lastFuelKm;
+      const fuelUsed    = kmSinceFill > 0 ? kmSinceFill / avg : 0;
+      const fuelLeft    = Math.max(0, lastLitres - fuelUsed);
+      const rangeLeft   = fuelLeft * avg;
+
+      document.getElementById('ins-range').textContent   = Math.round(rangeLeft) + ' km';
+      document.getElementById('ins-range-sub').textContent = `~${fuelLeft.toFixed(1)}L left · ${avg.toFixed(1)} km/L avg`;
+    } else {
+      document.getElementById('ins-range').textContent    = '—';
+      document.getElementById('ins-range-sub').textContent = 'Add fuel entries to estimate';
+    }
+
+    // ─ Table ─
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">No entries yet. Add your first entry above!</td></tr>`;
+      return;
+    }
+
+    // Consolidated average mileage (used for all fuel rows — not per-row)
+    const consolidatedAvg = avg !== null ? avg.toFixed(1) : null;
+
+    tbody.innerHTML = data.map(e => {
+      const dateStr  = new Date(e.date + 'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+      const typeTag  = e.type === 'full'
+        ? `<span class="tag-full">Fuel+KM</span>`
+        : `<span class="tag-km">KM Only</span>`;
+      const litStr   = e.litres != null ? e.litres.toFixed(1) + ' L' : '<span style="color:var(--muted)">—</span>';
+      const costStr  = e.cost   != null ? '₹' + e.cost.toFixed(0)   : '<span style="color:var(--muted)">—</span>';
+      const rateStr  = (e.litres && e.cost) ? '₹' + (e.cost/e.litres).toFixed(1) : '<span style="color:var(--muted)">—</span>';
+      const kmLStr   = (e.type === 'full' && e.litres && consolidatedAvg)
+        ? `<span style="color:var(--success)">${consolidatedAvg} km/L</span>`
+        : '<span style="color:var(--muted)">—</span>';
+      const srcTag   = !iscar && e.source
+        ? (e.source === 'Office'
+            ? `<span style="background:rgba(66,133,244,0.15);color:#4285F4;border-radius:4px;padding:2px 6px;font-size:0.7rem">🏢 Office</span>`
+            : `<span style="background:rgba(0,201,167,0.12);color:var(--bike);border-radius:4px;padding:2px 6px;font-size:0.7rem">🏠 Own</span>`)
+        : '';
+      const kmStr    = e.km != null ? Number(e.km).toLocaleString('en-IN') + ' km' : '<span style="color:var(--muted)">—</span>';
+
+      return `<tr>
+        <td>${dateStr}</td>
+        <td>${typeTag}${!iscar && e.source ? ' ' + srcTag : ''}</td>
+        <td>${kmStr}</td>
+        <td>${litStr}</td>
+        <td>${costStr}</td>
+        <td>${rateStr}</td>
+        <td>${kmLStr}</td>
+        <td><button class="del-btn" onclick="deleteEntry(${e.id})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Delete entry ─────────────────────────────────────────────────
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    let data = loadData(currentVehicle).filter(e => e.id !== id);
+    saveData(currentVehicle, data);
+    renderEntries();
+    showToast('🗑️ Entry deleted');
+  }
+
+  // ── Clear form ───────────────────────────────────────────────────
+  function clearForm() {
+    document.getElementById('entry-km').value     = '';
+    document.getElementById('entry-litres').value = '';
+    document.getElementById('entry-cost').value   = '';
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  // ── Debug logger ─────────────────────────────────────────────────
+  function debugLog(msg, color) {
+    const panel = document.getElementById('debug-panel');
+    const debugBtn = document.getElementById('btn-debug');
+    if (!panel) return;
+    panel.style.display = 'block';
+    if (debugBtn) debugBtn.style.display = 'flex';
+    const line = document.createElement('div');
+    line.style.color = color || '#a78bfa';
+    const time = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    line.textContent = '[' + time + '] ' + msg;
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  async function debugConnection() {
+    const panel = document.getElementById('debug-panel');
+    panel.innerHTML = '';
+    debugLog('=== DEBUG START ===', '#fff');
+    debugLog('Token: ' + (googleToken ? googleToken.substring(0,20) + '...' : 'NONE'), googleToken ? '#34a853' : '#ff4f4f');
+    debugLog('SpreadsheetId: ' + (spreadsheetId || 'NONE'), spreadsheetId ? '#34a853' : '#ff4f4f');
+    debugLog('Client ID: ' + GOOGLE_CLIENT_ID.substring(0,20) + '...', '#a78bfa');
+
+    if (!googleToken) {
+      debugLog('No token — please Connect Google first', '#ff4f4f');
+      return;
+    }
+
+    debugLog('Testing Sheets API...', '#f0a500');
+    try {
+      const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ properties: { title: 'Debug Test' }, sheets: [{ properties: { title: 'Sheet1' } }] })
+      });
+      const txt = await r.text();
+      debugLog('Sheets API status: ' + r.status, r.ok ? '#34a853' : '#ff4f4f');
+      if (!r.ok) {
+        debugLog('Response: ' + txt.substring(0, 200), '#ff4f4f');
+        if (r.status === 403) debugLog('FIX: Enable Google Drive API in Cloud Console', '#f0a500');
+        if (r.status === 401) debugLog('FIX: Token expired — disconnect and reconnect', '#f0a500');
+      } else {
+        const d = JSON.parse(txt);
+        debugLog('Sheet created! ID: ' + d.spreadsheetId, '#34a853');
+        debugLog('Saving and syncing now...', '#f0a500');
+        spreadsheetId = d.spreadsheetId;
+        const meta = loadMeta();
+        meta.spreadsheetId = spreadsheetId;
+        saveMeta(meta);
+        await addSheetHeaders();
+        await syncToSheets();
+        updateSyncUI(true, 'Connected');
+        debugLog('ALL DONE - check Google Drive!', '#34a853');
+        showToast('Connected and synced!', 5000);
+      }
+    } catch(e) {
+      debugLog('EXCEPTION: ' + e.message, '#ff4f4f');
+    }
+  }
+
+  function showToast(msg, duration = 2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // SETUP MODAL
+  // ══════════════════════════════════════════════════════════════════
+
+  function closeModal() {
+    document.getElementById('setup-modal').style.display = 'none';
+  }
+
+  function openSetupModal() {
+    const saved = localStorage.getItem('fuellog_client_id');
+    if (saved) document.getElementById('client-id-input').value = saved;
+    document.getElementById('setup-modal').style.display = 'flex';
+  }
+
+  function saveClientId() {
+    const val = document.getElementById('client-id-input').value.trim();
+    if (!val || !val.includes('.apps.googleusercontent.com')) {
+      showToast('⚠️ Please paste a valid Client ID', 3000);
+      return;
+    }
+    // Save to localStorage so it persists across page reloads
+    localStorage.setItem('fuellog_client_id', val);
+    closeModal();
+    showToast('✅ Client ID saved! Connecting…', 2500);
+    // Reload page so the new Client ID takes effect
+    setTimeout(() => location.reload(), 1200);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // GOOGLE SHEETS INTEGRATION
+  // ══════════════════════════════════════════════════════════════════
+
+  function handleGoogleAuth() {
+    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      openSetupModal();
+      return;
+    }
+
+    if (googleToken) {
+      googleToken = null;
+      spreadsheetId = null;
+      const meta = loadMeta();
+      delete meta.spreadsheetId;
+      saveMeta(meta);
+      updateSyncUI(false);
+      showToast('Disconnected from Google');
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.accounts) {
+      showToast('Google script still loading, please wait 3 seconds and try again…', 5000);
+      return;
+    }
+
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: async (tokenResponse) => {
+          if (tokenResponse.error) {
+            showToast('Auth error: ' + tokenResponse.error, 5000);
+            updateSyncUI(false, 'Auth failed');
+            return;
+          }
+          googleToken = tokenResponse.access_token;
+          updateSyncUI(true, 'Connecting…');
+          debugLog('Token received OK', '#34a853');
+          document.getElementById('debug-panel').style.display = 'block';
+          document.getElementById('btn-debug').style.display = 'flex';
+
+          const meta = loadMeta();
+          if (meta.spreadsheetId) {
+            spreadsheetId = meta.spreadsheetId;
+            try {
+              const check = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId, {
+                headers: { 'Authorization': 'Bearer ' + googleToken }
+              });
+              if (check.ok) {
+                updateSyncUI(true, 'Connected');
+                showToast('Reconnected to existing sheet!');
+                await syncToSheets(true);
+              } else {
+                delete meta.spreadsheetId;
+                saveMeta(meta);
+                spreadsheetId = null;
+                await createSpreadsheet();
+              }
+            } catch(e) {
+              await createSpreadsheet();
+            }
+          } else {
+            await createSpreadsheet();
+          }
+        }
+      });
+      client.requestAccessToken();
+    } catch(e) {
+      showToast('Could not start Google login: ' + e.message, 5000);
+      updateSyncUI(false);
+    }
+  }
+
+  async function createSpreadsheet() {
+    // Instead of auto-creating (requires Drive API), ask user to paste their Sheet ID
+    updateSyncUI(true, 'Sheet ID needed…');
+    document.getElementById('sheet-setup-modal').style.display = 'flex';
+  }
+
+  async function connectToSheet(sheetId) {
+    if (!sheetId || sheetId.trim() === '') {
+      showToast('Please paste a valid Sheet ID', 4000);
+      return;
+    }
+    spreadsheetId = sheetId.trim();
+    updateSyncUI(true, 'Connecting to sheet…');
+
+    // Test access by reading sheet metadata
+    try {
+      const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId, {
+        headers: { 'Authorization': 'Bearer ' + googleToken }
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        const msg = (err.error && err.error.message) ? err.error.message : 'HTTP ' + res.status;
+        showToast('Cannot access sheet: ' + msg, 6000);
+        updateSyncUI(false, 'Sheet access failed');
+        spreadsheetId = null;
+        return;
+      }
+
+      // Save sheet ID
+      const meta = loadMeta();
+      meta.spreadsheetId = spreadsheetId;
+      saveMeta(meta);
+
+      // Add headers then sync
+      await addSheetHeaders();
+      await syncToSheets();
+      updateSyncUI(true, 'Connected');
+      document.getElementById('sheet-setup-modal').style.display = 'none';
+      showToast('Connected and synced to Google Sheet!', 4000);
+    } catch(e) {
+      showToast('Error: ' + e.message, 6000);
+      updateSyncUI(false, 'Error');
+      spreadsheetId = null;
+    }
+  }
+
+
+  async function addSheetHeaders() {
+    const headers = [['Date','Type','KM Reading','Litres','Cost (₹)','₹/L','Avg km/L','Source']];
+    for (const sheet of [SHEET_NAME_CAR, SHEET_NAME_BIKE]) {
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheet)}!A1:G1?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + googleToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values: headers })
+      });
+    }
+  }
+
+  async function syncToSheets(silent = false) {
+    if (!googleToken || !spreadsheetId) return;
+
+    const btn = document.getElementById('btn-sync');
+    btn.disabled = true;
+    btn.textContent = '↑ Syncing…';
+    updateSyncUI(true, 'Syncing…');
+
+    try {
+      for (const vehicle of ['car','bike']) {
+        const sheetName = vehicle === 'car' ? SHEET_NAME_CAR : SHEET_NAME_BIKE;
+        const data = loadData(vehicle);
+        const { avg: syncAvg } = calcMileage(data);
+        const syncAvgStr = syncAvg !== null ? syncAvg.toFixed(1) : '';
+
+        const rows = data.map(e => {
+          const dateStr = new Date(e.date + 'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+          return [
+            dateStr,
+            e.type === 'full' ? 'Fuel+KM' : 'KM Only',
+            e.km,
+            e.litres ?? '',
+            e.cost   ?? '',
+            (e.litres && e.cost) ? (e.cost/e.litres).toFixed(1) : '',
+            (e.type === 'full' && e.litres) ? syncAvgStr : '',
+            vehicle === 'bike' ? (e.source || '') : ''
+          ];
+        });
+
+        // Clear existing data and rewrite
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A2:G?valueInputOption=USER_ENTERED`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + googleToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            range: `${sheetName}!A2:G`,
+            values: rows.length ? rows : [[]]
+          })
+        });
+      }
+
+      const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+      updateSyncUI(true, `Synced at ${now}`);
+      if (!silent) showToast('✅ Synced to Google Sheets!');
+    } catch(e) {
+      updateSyncUI(true, 'Sync failed');
+      if (!silent) showToast('❌ Sync error: ' + e.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '↑ Sync';
+  }
+
+  function updateSyncUI(connected, statusMsg = '') {
+    const dot  = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    const authBtn = document.getElementById('btn-google-auth');
+    const syncBtn = document.getElementById('btn-sync');
+
+    if (connected) {
+      dot.className = 'status-dot connected';
+      text.textContent = statusMsg || 'Connected to Google Sheets';
+      authBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#fff"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#fff"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#fff"/></svg> Disconnect`;
+      syncBtn.style.display = 'flex';
+      syncBtn.disabled = false;
+    } else {
+      dot.className = 'status-dot';
+      text.textContent = statusMsg || 'Not connected to Google';
+      authBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#fff"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#fff"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#fff"/></svg> Connect Google`;
+      syncBtn.style.display = 'none';
+    }
+  }
+
+  // ── Clear user-added entries ──────────────────────────────────────
+  function clearUserData() {
+    if (!confirm('This will delete all manually added entries (baseline Excel data stays intact). Continue?')) return;
+    localStorage.removeItem('fuellog_car');
+    localStorage.removeItem('fuellog_bike');
+    localStorage.removeItem('fuellog_meta');
+    renderEntries();
+    showToast('✅ User entries cleared — baseline data restored');
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  document.getElementById('entry-date').valueAsDate = new Date();
+  renderEntries();
+</script>
+</body>
+</html>
